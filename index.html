@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Food Classifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <style>
+    body { font-family: Arial; text-align: center; background: #f5f5f5; }
+    #webcam-container canvas { border-radius: 10px; margin-top: 10px; }
+  </style>
+</head>
+
+<body>
+
+<h2>🍽️ Food Classifier</h2>
+<button onclick="init()">Start Camera</button>
+
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+
+<script type="text/javascript">
+  const URL = "https://teachablemachine.withgoogle.com/models/[...]";
+
+  let model, webcam, labelContainer, maxPredictions;
+
+  async function init() {
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
+
+    model = await tmImage.load(modelURL, metadataURL);
+    maxPredictions = model.getTotalClasses();
+
+    webcam = new tmImage.Webcam(224, 224, true);
+    await webcam.setup();
+    await webcam.play();
+    window.requestAnimationFrame(loop);
+
+    document.getElementById("webcam-container").appendChild(webcam.canvas);
+    labelContainer = document.getElementById("label-container");
+
+    for (let i = 0; i < maxPredictions; i++) {
+      labelContainer.appendChild(document.createElement("div"));
+    }
+  }
+
+  async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
+  }
+
+  async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    prediction.sort((a, b) => b.probability - a.probability);
+
+    labelContainer.innerHTML =
+      `<b>${prediction[0].className}</b> : ${(prediction[0].probability * 100).toFixed(1)}%`;
+  }
+</script>
+
+</body>
+</html>
